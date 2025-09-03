@@ -1,0 +1,63 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum GameResult {
+  COMPLETED
+  DRAW
+  IN_PROGRESS
+  NOT_STARTED
+  WHITE_WON
+  BLACK_WON
+}
+
+
+model User {
+  id        Int      @id @default(autoincrement())
+  password  String
+  name      String?   
+  email     String   @unique
+  rating    Int      @default(300)
+  gamesAsWhite Game[] @relation("WhitePlayer")
+  gamesAsBlack Game[] @relation("BlackPlayer")
+  moves     Move[] 
+  createdAt DateTime @default(now())
+}
+
+model Game {
+  id        Int      @id @default(autoincrement())
+  whiteId   Int?
+  blackId   Int?
+  white     User?     @relation("WhitePlayer", fields: [whiteId], references: [id])
+  black     User?    @relation("BlackPlayer", fields: [blackId], references: [id])
+  result    GameResult @default(NOT_STARTED)
+  fen       String
+  moves     Move[]
+  createdAt DateTime @default(now())
+}
+
+model Move {
+  id       Int      @id @default(autoincrement())
+  gameId   Int
+  game     Game     @relation(fields: [gameId], references: [id])
+  moveNum  Int
+  notation String   
+  playedAt DateTime @default(now())
+  playerId Int 
+  player   User     @relation(fields: [playerId], references: [id])
+
+  @@unique([gameId, moveNum]) // Ensures unique move order per game
+}
+
